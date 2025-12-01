@@ -22,9 +22,9 @@ jobs:
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
         run: |
-          choco install -y mozillabuild
-          choco install -y visualstudio2022buildtools
-          choco install -y visualstudio2022-workload-vctools
+          choco install -y --no-progress mozillabuild
+          choco install -y --no-progress visualstudio2022buildtools
+          choco install -y --no-progress visualstudio2022-workload-vctools
 
           scoop install rustup
           rustup default stable-x86_64-pc-windows-msvc
@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir -p $HOME/mozilla-source
           cd $HOME/mozilla-source
-          git clone https://github.com/mozilla-firefox/firefox.git
+          git clone --depth 1 https://github.com/mozilla-firefox/firefox.git
           cd firefox
           # Optional: checkout a specific revision or branch
           # git checkout <your-revision>
