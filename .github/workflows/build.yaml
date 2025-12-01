@@ -22,7 +22,7 @@ jobs:
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
         run: |
-          ~\scoop\shims\scoop.exe install rustup
+          $HOME/scoop/shims/scoop.exe install rustup
           rustup default stable-x86_64-pc-windows-msvc
 
           choco install -y --no-progress mozillabuild
@@ -66,8 +66,8 @@ jobs:
           cd $HOME/mozilla-source/firefox
           mv objdir-opt/dist/bin objdir-opt/dist/hellfire
 
-          $VERSION = (Select-String -Path .\application.ini -Pattern "^Version=(.*)$")[0].Matches.Groups[1].Value
-          $LANG = cat .\default.locale
+          $VERSION = (Select-String -Path ./application.ini -Pattern "^Version=(.*)$")[0].Matches.Groups[1].Value
+          $LANG = cat ./default.locale
           $NAME = "hellfire-${VERSION}.${LANG}.windows.x86-64.7z"
           7z a $NAME ./objdir-opt/dist/hellfire
 
