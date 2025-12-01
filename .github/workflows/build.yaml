@@ -22,12 +22,12 @@ jobs:
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
         run: |
-          choco install -y --no-progress mozillabuild
-          choco install -y --no-progress visualstudio2022buildtools
-          choco install -y --no-progress visualstudio2022-workload-vctools
-
-          scoop install rustup
+          ~\scoop\shims\scoop.exe install rustup
           rustup default stable-x86_64-pc-windows-msvc
+
+          choco install -y --no-progress mozillabuild
+          # choco install -y --no-progress visualstudio2022buildtools
+          # choco install -y --no-progress visualstudio2022-workload-vctools
 
       - name: Clone Firefox source
         shell: pwsh
