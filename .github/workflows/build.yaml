@@ -22,7 +22,7 @@ jobs:
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
         run: |
-          $env:HOMEPATH\scoop\shims\scoop.exe install rustup
+          ~/scoop/shims/scoop.exe install rustup
           rustup default stable-x86_64-pc-windows-msvc
 
           choco install -y --no-progress mozillabuild
@@ -32,8 +32,8 @@ jobs:
       - name: Clone Firefox source
         shell: pwsh
         run: |
-          mkdir -p $env:HOMEPATH/mozilla-source
-          cd $env:HOMEPATH/mozilla-source
+          mkdir -p ~/mozilla-source
+          cd ~/mozilla-source
           git clone --depth 1 https://github.com/mozilla-firefox/firefox.git
           cd firefox
           # Optional: checkout a specific revision or branch
@@ -42,13 +42,13 @@ jobs:
       - name: Copy custom mozconfig
         shell: pwsh
         run: |
-          cd $env:HOMEPATH/mozilla-source/firefox
+          cd ~/mozilla-source/firefox
           cp $env:GITHUB_WORKSPACE/HellFire-Windows/MozConfigs/Win64/mozconfig .mozconfig
 
       # - name: Bootstrap toolchain
       #   shell: bash
       #   run: |
-      #     cd $env:HOMEPATH/mozilla-source/firefox
+      #     cd ~/mozilla-source/firefox
       #     ./mach bootstrap --application-choice "Firefox for Desktop Artifact Mode"
 
       - name: Build HellFire
@@ -57,13 +57,13 @@ jobs:
           MOZILLABUILD: 'C:/mozilla-build'
           MACH_PS1_USE_MOZILLABUILD: 'true'
         run: |
-          cd $env:HOMEPATH/mozilla-source/firefox
+          cd ~/mozilla-source/firefox
           ./mach.ps1 build
 
       - name: Package HellFire
         shell: pwsh
         run: |
-          cd $env:HOMEPATH/mozilla-source/firefox
+          cd ~/mozilla-source/firefox
           mv objdir-opt/dist/bin objdir-opt/dist/hellfire
 
           $VERSION = (Select-String -Path ./application.ini -Pattern "^Version=(.*)$")[0].Matches.Groups[1].Value
@@ -77,4 +77,4 @@ jobs:
         with:
           name: firefox-win64-build
           path: |
-            $env:HOMEPATH/mozilla-source/firefox/hellfire-*.windows.x86-64.7z
+            ~/mozilla-source/firefox/hellfire-*.windows.x86-64.7z
