@@ -22,7 +22,7 @@ jobs:
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
         run: |
-          ~/scoop/shims/scoop.exe install rustup
+          ~/scoop/shims/scoop install rustup
           rustup default stable-x86_64-pc-windows-msvc
 
           choco install -y --no-progress mozillabuild
