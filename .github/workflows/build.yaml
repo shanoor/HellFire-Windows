@@ -43,7 +43,7 @@ jobs:
         shell: pwsh
         run: |
           cd ~/mozilla-source/firefox
-          cp $env:GITHUB_WORKSPACE/HellFire-Windows/MozConfigs/Win64/mozconfig .mozconfig
+          cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig .mozconfig
 
       # - name: Bootstrap toolchain
       #   shell: bash
