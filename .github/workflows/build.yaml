@@ -58,7 +58,7 @@ jobs:
           MACH_PS1_USE_MOZILLABUILD: 'true'
         run: |
           cd ~/mozilla-source/firefox
-          ./mach.ps1 build
+          ./mach.cmd build
 
       - name: Package HellFire
         shell: pwsh
