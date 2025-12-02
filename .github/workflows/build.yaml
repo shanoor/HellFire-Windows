@@ -18,7 +18,9 @@ jobs:
         uses: actions/cache@v4
         with:
           key: hellfire-build
-          path: ~/mozilla-source
+          path: |
+            ~/mozilla-source
+            ~/.mozbuild
 
       - name: Install scoop
         shell: pwsh
@@ -54,12 +56,6 @@ jobs:
         run: |
           cd ~/mozilla-source/firefox
           cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig .mozconfig
-
-      # - name: Bootstrap toolchain
-      #   shell: bash
-      #   run: |
-      #     cd ~/mozilla-source/firefox
-      #     ./mach bootstrap --application-choice "Firefox for Desktop Artifact Mode"
 
       - name: Build HellFire
         shell: pwsh
