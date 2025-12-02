@@ -71,6 +71,7 @@ jobs:
           ./mach.cmd build
 
       - name: Package HellFire
+        id: package
         shell: pwsh
         run: |
           cd ~/mozilla-source/firefox
@@ -81,10 +82,20 @@ jobs:
           $NAME = "hellfire-${VERSION}.${LANG}.windows.x86-64.7z"
           7z a $NAME ./objdir-opt/dist/hellfire
 
-      - name: Release artifact
+          "VERSION=$VERSION" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "FILENAME=$NAME" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      # - name: Release artifact
+      #   if: success()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: firefox-win64-build
+      #     path: |
+      #       ~/mozilla-source/firefox/${{ steps.package.outputs.FILENAME }}
+
+      - name: Release
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: softprops/action-gh-release@v2.5.0
         with:
-          name: firefox-win64-build
-          path: |
-            ~/mozilla-source/firefox/hellfire-*.windows.x86-64.7z
+          name: v${{ steps.package.outputs.VERSION }}
+          files: ~/mozilla-source/firefox/${{ steps.package.outputs.FILENAME }}
