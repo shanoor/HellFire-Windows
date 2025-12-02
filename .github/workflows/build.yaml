@@ -34,7 +34,10 @@ jobs:
         run: |
           mkdir -p ~/mozilla-source
           cd ~/mozilla-source
-          git clone --depth 1 https://github.com/mozilla-firefox/firefox.git
+
+          if ! git clone --depth 1 "https://github.com/mozilla-firefox/firefox.git" "firefox" 2>/dev/null && [ -d "firefox" ] ; then
+              echo "Clone failed because the folder firefox exists"
+          fi
           cd firefox
           # Optional: checkout a specific revision or branch
           # git checkout <your-revision>
@@ -59,6 +62,12 @@ jobs:
         run: |
           cd ~/mozilla-source/firefox
           ./mach.cmd build
+
+      - name: Cache HellFire build
+        uses: actions/cache@v4
+        with:
+          key: hellfire-build
+          path: ~/mozilla-source
 
       - name: Package HellFire
         shell: pwsh
