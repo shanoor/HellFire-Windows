@@ -14,6 +14,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Cache Firefox source and HellFire build
+        uses: actions/cache@v4
+        with:
+          key: hellfire-build
+          path: ~/mozilla-source
+
       - name: Install scoop
         shell: pwsh
         run: |
@@ -30,7 +36,7 @@ jobs:
           # choco install -y --no-progress visualstudio2022-workload-vctools
 
       - name: Clone Firefox source
-        shell: pwsh
+        shell: bash
         run: |
           mkdir -p ~/mozilla-source
           cd ~/mozilla-source
@@ -40,7 +46,7 @@ jobs:
           fi
           cd firefox
           # Optional: checkout a specific revision or branch
-          # git checkout <your-revision>
+          git checkout main
 
       - name: Copy custom mozconfig
         shell: pwsh
@@ -62,12 +68,6 @@ jobs:
         run: |
           cd ~/mozilla-source/firefox
           ./mach.cmd build
-
-      - name: Cache HellFire build
-        uses: actions/cache@v4
-        with:
-          key: hellfire-build
-          path: ~/mozilla-source
 
       - name: Package HellFire
         shell: pwsh
