@@ -47,6 +47,7 @@ jobs:
           cd firefox
           # Optional: checkout a specific revision or branch
           git checkout main
+          git pull
 
       - name: Copy custom mozconfig
         shell: pwsh
