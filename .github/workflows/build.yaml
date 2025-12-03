@@ -76,7 +76,7 @@ jobs:
           $VERSION = (Select-String -Path ./objdir-opt/dist/hellfire/application.ini -Pattern "^Version=(.*)$")[0].Matches.Groups[1].Value
           $LANG = cat ./objdir-opt/dist/hellfire/default.locale
           $NAME = "hellfire-${VERSION}.${LANG}.windows.x86-64.7z"
-          7z a $NAME ./objdir-opt/dist/hellfire
+          7z a $GITHUB_WORKSPACE/$NAME ./objdir-opt/dist/hellfire
 
           "VERSION=$VERSION" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "FILENAME=$NAME" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
@@ -95,4 +95,4 @@ jobs:
         with:
           tag_name: v${{ steps.package.outputs.VERSION }}
           name: v${{ steps.package.outputs.VERSION }}
-          files: ~/mozilla-source/firefox/${{ steps.package.outputs.FILENAME }}
+          files: ${{ steps.package.outputs.FILENAME }}
