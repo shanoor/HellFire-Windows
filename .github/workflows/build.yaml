@@ -93,5 +93,6 @@ jobs:
         if: success()
         uses: softprops/action-gh-release@v2.5.0
         with:
+          tag_name: v${{ steps.package.outputs.VERSION }}
           name: v${{ steps.package.outputs.VERSION }}
           files: ~/mozilla-source/firefox/${{ steps.package.outputs.FILENAME }}
