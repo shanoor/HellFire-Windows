@@ -1,0 +1,174 @@
+name: Build and Release HellFire Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'HellFire tag to build (e.g., v147.0a1_FP1)'
+        required: true
+        type: string
+  # schedule:
+  #   # Check for new tags daily at 2 AM UTC
+  #   - cron: '0 2 * * *'
+
+env:
+  FIREFOX_VERSION: '' # Will be set dynamically from tag
+
+jobs:
+  check-new-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get-tag.outputs.tag }}
+      has-new-tag: ${{ steps.get-tag.outputs.has-new-tag }}
+    steps:
+      - name: Get latest HellFire tag
+        id: get-tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "has-new-tag=true" >> $GITHUB_OUTPUT
+          else
+            # Fetch latest tag from upstream HellFire repo
+            LATEST_TAG=$(curl -s https://api.github.com/repos/CYFARE/HellFire/releases/latest | jq -r .tag_name)
+
+            # Check if we've already built this tag
+            EXISTING_RELEASE=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/tags/$LATEST_TAG)
+
+            if echo "$EXISTING_RELEASE" | jq -e .tag_name > /dev/null 2>&1; then
+              echo "has-new-tag=false" >> $GITHUB_OUTPUT
+              echo "Tag $LATEST_TAG already exists"
+            else
+              echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+              echo "has-new-tag=true" >> $GITHUB_OUTPUT
+              echo "New tag found: $LATEST_TAG"
+            fi
+          fi
+
+  build-windows:
+    needs: check-new-tag
+    if: needs.check-new-tag.outputs.has-new-tag == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout HellFire repository
+        uses: actions/checkout@v4
+        with:
+          repository: CYFARE/HellFire
+          ref: ${{ needs.check-new-tag.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Cache Firefox source and HellFire build
+        uses: actions/cache@v4
+        with:
+          key: hellfire-build
+          path: |
+            ~/mozilla-source
+            ~/.mozbuild
+
+      - name: Install scoop
+        shell: pwsh
+        run: |
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+
+      - name: Install MozillaBuild and prerequisites
+        shell: pwsh
+        run: |
+          ~/scoop/shims/scoop install rustup
+          rustup default stable-x86_64-pc-windows-msvc
+
+          choco install -y --no-progress mozillabuild
+          # choco install -y --no-progress visualstudio2022buildtools
+          # choco install -y --no-progress visualstudio2022-workload-vctools
+
+      - name: Clone Firefox source
+        shell: bash
+        run: |
+          mkdir -p ~/mozilla-source
+          cd ~/mozilla-source
+
+          if ! git clone --depth 1 "https://github.com/mozilla-firefox/firefox.git" "firefox" 2>/dev/null && [ -d "firefox" ] ; then
+              echo "Clone failed because the folder firefox exists"
+          fi
+          cd firefox
+          # Optional: checkout a specific revision or branch
+          git checkout main
+          git pull
+
+      - name: Copy custom mozconfig
+        shell: pwsh
+        run: |
+          cd ~/mozilla-source/firefox
+          cp $env:GITHUB_WORKSPACE/HellFire/MozConfigs/Win64/mozconfig .mozconfig
+
+      - name: Build HellFire
+        shell: pwsh
+        env:
+          MOZILLABUILD: 'C:/mozilla-build'
+          MACH_PS1_USE_MOZILLABUILD: 'true'
+        run: |
+          cd ~/mozilla-source/firefox
+          ./mach.cmd build
+
+      - name: Package HellFire
+        id: package
+        shell: pwsh
+        run: |
+          cd ~/mozilla-source/firefox
+          mv objdir-opt/dist/bin objdir-opt/dist/hellfire
+
+          $TAG = "${{ needs.check-new-tag.outputs.tag }}"
+          $VERSION = $TAG -replace 'v', ''
+          $LANG = cat ./objdir-opt/dist/hellfire/default.locale
+          $NAME = "hellfire-${VERSION}.${LANG}.windows.x86-64.7z"
+          # Create release directory
+          New-Item -ItemType Directory -Force -Path "release"
+          7z a release/$NAME ./objdir-opt/dist/hellfire
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hellfire-windows-${{ needs.check-new-tag.outputs.tag }}
+          path: release/*
+          retention-days: 7
+
+  create-release:
+    needs: [check-new-tag, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: hellfire-windows-${{ needs.check-new-tag.outputs.tag }}
+          path: release-files
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.check-new-tag.outputs.tag }}
+          name: HellFire Windows ${{ needs.check-new-tag.outputs.tag }}
+          body: |
+            ## HellFire Windows Build ${{ needs.check-new-tag.outputs.tag }}
+
+            Automated Windows build based on upstream HellFire tag ${{ needs.check-new-tag.outputs.tag }}
+
+            ### Optimizations
+            - `-O3` Optimized
+            - Hardened Security
+            - Sandbox Enabled
+            - AVX2 + SSE4.2 support
+
+            ### Installation
+            - **Installer**: Download the `.exe` file and run it
+            - **Portable**: Extract the `.zip` file and run `firefox.exe`
+
+            ### Upstream Repository
+            Based on [CYFARE/HellFire](${{ github.event.repository.html_url }})
+
+          files: release-files/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
