@@ -1,6 +1,9 @@
 name: Build and Release HellFire Windows
 
 on:
+  push:
+    branches:
+      - feat/add-build-action # TODO
   workflow_dispatch:
     inputs:
       tag:

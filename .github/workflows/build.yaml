@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feat/add-build-action # TODO
+      - disabled # TODO
 
 jobs:
   build-hellfire:
