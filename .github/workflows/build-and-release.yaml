@@ -134,6 +134,15 @@ jobs:
           path: release/*
           retention-days: 7
 
+      - name: Update Cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          key: hellfire-build
+          path: |
+            ~/mozilla-source
+            ~/.mozbuild
+
   create-release:
     needs: [check-new-tag, build-windows]
     runs-on: ubuntu-latest
