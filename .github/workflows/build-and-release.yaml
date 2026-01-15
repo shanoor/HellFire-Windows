@@ -101,7 +101,7 @@ jobs:
         shell: pwsh
         run: |
           cd ~/mozilla-source/firefox
-          cp $env:GITHUB_WORKSPACE/HellFire/MozConfigs/Win64/mozconfig .mozconfig
+          cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig .mozconfig
 
       - name: Build HellFire
         shell: pwsh
