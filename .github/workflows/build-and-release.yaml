@@ -106,7 +106,7 @@ jobs:
       - name: Save cache (source)
         uses: actions/cache/save@v4
         with:
-          key: hellfire-build
+          key: source
           path: |
             ~/mozilla-source
 
@@ -176,7 +176,7 @@ jobs:
         uses: actions/cache/save@v4
         if: always()
         with:
-          key: hellfire-build
+          key: build
           path: |
             ~/.mozbuild
 
