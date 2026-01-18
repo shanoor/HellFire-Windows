@@ -46,15 +46,15 @@ jobs:
           LATEST_VERSION=$(curl -s https://github.com/mozilla-firefox/firefox/raw/refs/heads/${{ matrix.branch }}/browser/config/version.txt)
 
           # Check if we've already built this version
-          EXISTING_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/$LATEST_VERSION${{ matrix.release_name }}")
+          EXISTING_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/${LATEST_VERSION}${{ matrix.release_name }}")
 
           if echo "$EXISTING_RELEASE" | jq -e .tag_name > /dev/null 2>&1; then
             echo "${{ matrix.branch }}-has-new-version=false" >> $GITHUB_OUTPUT
-            echo "Tag $LATEST_VERSION${{ matrix.release_name }} already exists"
+            echo "Tag ${LATEST_VERSION}${{ matrix.release_name }} already exists"
           else
-            echo "version"=$LATEST_VERSION${{ matrix.release_name }}" >> $GITHUB_OUTPUT
+            echo "version"=${LATEST_VERSION}${{ matrix.release_name }}" >> $GITHUB_OUTPUT
             echo "${{ matrix.branch }}-has-new-version=true" >> $GITHUB_OUTPUT
-            echo "New version found: $LATEST_VERSION${{ matrix.release_name }}"
+            echo "New version found: ${LATEST_VERSION}${{ matrix.release_name }}"
           fi
 
   # Nightly
