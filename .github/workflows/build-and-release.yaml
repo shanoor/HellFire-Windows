@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'HellFire tag to build (e.g., v147.0a1_FP1)'
+        description: 'Tag to build (e.g., v147.0a1_FP1)'
         required: true
         type: string
   # schedule:
@@ -18,59 +18,81 @@ env:
   FIREFOX_VERSION: '' # Will be set dynamically from tag
 
 jobs:
-  check-new-tag:
+  check-new-version:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch:
+          - autoland
+          - beta
+          - release
+        include:
+          - branch: autoland
+            release_name: -nightly
+          - branch: beta
+            release_name: -beta
+          - branch: release
+            release_name: ''
     outputs:
-      tag: ${{ steps.get-tag.outputs.tag }}
-      has-new-tag: ${{ steps.get-tag.outputs.has-new-tag }}
+      version: ${{ steps.get-version.outputs.version }}
+      autoland-has-new-version: ${{ steps.set-output.outputs.autoland-has-new-version }}
+      beta-has-new-version: ${{ steps.set-output.outputs.beta-has-new-version }}
+      release-has-new-version: ${{ steps.set-output.outputs.release-has-new-version }}
     steps:
-      - name: Get latest HellFire tag
-        id: get-tag
+      - name: Get version for branch ${{ matrix.branch }}
+        id: get-version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            TAG="${{ github.event.inputs.tag }}"
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
-            echo "has-new-tag=true" >> $GITHUB_OUTPUT
+          # Fetch version from Firefox repository
+          LATEST_VERSION=$(curl -s https://github.com/mozilla-firefox/firefox/raw/refs/heads/${{ matrix.branch }}/browser/config/version.txt)
+
+          # Check if we've already built this version
+          EXISTING_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/$(LATEST_VERSION)${{ matrix.release_name }}")
+
+          if echo "$EXISTING_RELEASE" | jq -e .tag_name > /dev/null 2>&1; then
+            echo "${{ matrix.branch }}-has-new-version=false" >> $GITHUB_OUTPUT
+            echo "Tag $(LATEST_VERSION)${{ matrix.release_name }} already exists"
           else
-            # Fetch latest tag from upstream HellFire repo
-            LATEST_TAG=$(curl -s https://api.github.com/repos/CYFARE/HellFire/releases/latest | jq -r .tag_name)
-
-            # Check if we've already built this tag
-            EXISTING_RELEASE=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/tags/$LATEST_TAG)
-
-            if echo "$EXISTING_RELEASE" | jq -e .tag_name > /dev/null 2>&1; then
-              echo "has-new-tag=false" >> $GITHUB_OUTPUT
-              echo "Tag $LATEST_TAG already exists"
-            else
-              echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-              echo "has-new-tag=true" >> $GITHUB_OUTPUT
-              echo "New tag found: $LATEST_TAG"
-            fi
+            echo "version"=$(LATEST_VERSION)${{ matrix.release_name }}" >> $GITHUB_OUTPUT
+            echo "${{ matrix.branch }}-has-new-version=true" >> $GITHUB_OUTPUT
+            echo "New version found: $(LATEST_VERSION)${{ matrix.release_name }}"
           fi
 
   build-windows:
-    needs: check-new-tag
-    if: needs.check-new-tag.outputs.has-new-tag == 'true'
+    needs: check-new-version
     runs-on: windows-latest
+    strategy:
+      matrix:
+        branch:
+          - autoland
+          - beta
+          - release
+        include:
+          - branch: autoland
+            release_name: -nightly
+          - branch: beta
+            release_name: -beta
+          - branch: release
+            release_name: ''
+    if: needs.check-new-version.outputs.${{ matrix.branch }}-has-new-version == 'true'
     steps:
-      - name: Checkout HellFire repository
-        uses: actions/checkout@v4
-        with:
-          repository: CYFARE/HellFire
-          ref: ${{ needs.check-new-tag.outputs.tag }}
-          fetch-depth: 0
+      # - name: Checkout HellFire repository
+      #   uses: actions/checkout@v4
+      #   with:
+      #     repository: CYFARE/HellFire
+      #     ref: ${{ needs.check-new-version.outputs.version }}
+      #     fetch-depth: 0
 
-      - name: Restore cache (Firefox source)
-        uses: actions/cache/restore@v4
-        with:
-          key: source
-          path: |
-            ~/mozilla-source
+      # - name: Restore cache (Firefox source)
+      #   uses: actions/cache/restore@v4
+      #   with:
+      #     key: source
+      #     path: |
+      #       ~/mozilla-source
 
       - name: Restore cache (build)
         uses: actions/cache/restore@v4
         with:
-          key: build
+          key: build-${{ matrix.branch }}
           path: |
             ~/.mozbuild
 
@@ -89,7 +111,7 @@ jobs:
           # choco install -y --no-progress visualstudio2022buildtools
           # choco install -y --no-progress visualstudio2022-workload-vctools
 
-      - name: Clone Firefox source
+      - name: Clone Firefox source (branch ${{ matrix.branch }})
         shell: bash
         run: |
           mkdir -p ~/mozilla-source
@@ -100,23 +122,24 @@ jobs:
           fi
           cd firefox
           # Optional: checkout a specific revision or branch
-          git checkout main
+          git checkout ${{ matrix.branch }}
           git pull
 
-      - name: Save cache (source)
-        uses: actions/cache/save@v4
-        with:
-          key: source
-          path: |
-            ~/mozilla-source
+      # - name: Save cache (source)
+      #   uses: actions/cache/save@v4
+      #   with:
+      #     key: source
+      #     path: |
+      #       ~/mozilla-source
 
       - name: Copy custom mozconfig
         shell: pwsh
         run: |
           cd ~/mozilla-source/firefox
           cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig .mozconfig
+          cat .mozconfig
 
-      - name: Build HellFire
+      - name: Mach Build
         shell: pwsh
         env:
           MOZILLABUILD: 'C:/mozilla-build'
@@ -125,7 +148,7 @@ jobs:
           cd ~/mozilla-source/firefox
           ./mach.cmd build
 
-      - name: Package HellFire
+      - name: Mach Package
         shell: pwsh
         env:
           MOZILLABUILD: 'C:/mozilla-build'
@@ -134,7 +157,7 @@ jobs:
           cd ~/mozilla-source/firefox
           ./mach.cmd package
 
-      - name: Make Installer
+      - name: Mach Installer
         shell: pwsh
         env:
           MOZILLABUILD: 'C:/mozilla-build'
@@ -146,29 +169,20 @@ jobs:
       - name: Debug
         shell: pwsh
         run: |
-          cd ~/mozilla-source/firefox
-          tree objdir-opt/dist
+          Get-ChildItem ~/mozilla-source/firefox/objdir-opt/dist
 
-      - name: Zip HellFire
-        id: package
+      - name: Prepare artifacts
+        id: prepare_artifacts
         shell: pwsh
         run: |
-          cd ~/mozilla-source/firefox
-          mv objdir-opt/dist/bin objdir-opt/dist/hellfire
-
-          $TAG = "${{ needs.check-new-tag.outputs.tag }}"
-          $VERSION = $TAG -replace 'v', ''
-          $LANG = cat ./objdir-opt/dist/hellfire/default.locale
-          $NAME = "hellfire-${VERSION}.${LANG}.windows.x86-64.7z"
-          
           # Create release directory
-          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE/release"
-          7z a $env:GITHUB_WORKSPACE/release/$NAME ./objdir-opt/dist/hellfire
+          New-Item -ItemType Directory -Force -Path "release"
+          cp ~/mozilla-source/firefox/objdir-opt/dist/*.zip release/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: hellfire-windows-${{ needs.check-new-tag.outputs.tag }}
+          name: firefox-windows-${{ needs.check-new-version.outputs.version }}
           path: release/*
           retention-days: 7
 
@@ -181,8 +195,21 @@ jobs:
             ~/.mozbuild
 
   create-release:
-    needs: [check-new-tag, build-windows]
+    needs: [check-new-version, build-windows]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch:
+          - autoland
+          - beta
+          - release
+        include:
+          - branch: autoland
+            release_name: -nightly
+          - branch: beta
+            release_name: -beta
+          - branch: release
+            release_name: ''
     permissions:
       contents: write
 
@@ -190,18 +217,18 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: hellfire-windows-${{ needs.check-new-tag.outputs.tag }}
+          name: firefox-windows-${{ needs.check-new-version.outputs.version }}
           path: release-files
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ needs.check-new-tag.outputs.tag }}
-          name: HellFire Windows ${{ needs.check-new-tag.outputs.tag }}
+          tag_name: ${{ needs.check-new-version.outputs.version }}
+          name: Hellfire Windows ${{ needs.check-new-version.outputs.version }}
           body: |
-            ## HellFire Windows Build ${{ needs.check-new-tag.outputs.tag }}
+            ## HellFire Windows Build ${{ needs.check-new-version.outputs.version }}
 
-            Automated Windows build based on upstream HellFire tag ${{ needs.check-new-tag.outputs.tag }}
+            Automated Windows build based on Firefox ${{ needs.check-new-version.outputs.version }}
 
             ### Optimizations
             - `-O3` Optimized
@@ -217,7 +244,7 @@ jobs:
             Based on [CYFARE/HellFire](${{ github.event.repository.html_url }})
 
           files: release-files/*
-          draft: false
+          draft: true
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
