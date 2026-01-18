@@ -35,9 +35,9 @@ jobs:
             release_name: ''
     outputs:
       version: ${{ steps.get-version.outputs.version }}
-      autoland-has-new-version: ${{ steps.set-output.outputs.autoland-has-new-version }}
-      beta-has-new-version: ${{ steps.set-output.outputs.beta-has-new-version }}
-      release-has-new-version: ${{ steps.set-output.outputs.release-has-new-version }}
+      autoland-has-new-version: ${{ steps.get-version.outputs.autoland-has-new-version }}
+      beta-has-new-version: ${{ steps.get-version.outputs.beta-has-new-version }}
+      release-has-new-version: ${{ steps.get-version.outputs.release-has-new-version }}
     steps:
       - name: Get version for branch ${{ matrix.branch }}
         id: get-version
