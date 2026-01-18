@@ -61,7 +61,7 @@ jobs:
   build-autoland:
     needs: check-new-version
     if: needs.check-new-version.outputs.autoland-has-new-version == 'true'
-    uses: ./.github/workflows/template-build.yml
+    uses: ./.github/workflows/template-build.yaml
     with:
       branch: autoland
     secrets:
@@ -70,7 +70,7 @@ jobs:
   release-autoland:
     needs: [check-new-version, build-autoland]
     if: needs.check-new-version.outputs.autoland-has-new-version == 'true'
-    uses: ./.github/workflows/template-release.yml
+    uses: ./.github/workflows/template-release.yaml
     with:
       branch: autoland
       version: needs.check-new-version.outputs.version
@@ -80,7 +80,7 @@ jobs:
   build-beta:
     needs: check-new-version
     if: needs.check-new-version.outputs.beta-has-new-version == 'true'
-    uses: ./.github/workflows/template-build.yml
+    uses: ./.github/workflows/template-build.yaml
     with:
       branch: beta
     secrets:
@@ -89,7 +89,7 @@ jobs:
   release-beta:
     needs: [check-new-version, build-beta]
     if: needs.check-new-version.outputs.beta-has-new-version == 'true'
-    uses: ./.github/workflows/template-release.yml
+    uses: ./.github/workflows/template-release.yaml
     with:
       branch: beta
       version: needs.check-new-version.outputs.version
@@ -99,14 +99,14 @@ jobs:
   build-release:
     needs: check-new-version
     if: needs.check-new-version.outputs.release-has-new-version == 'true'
-    uses: ./.github/workflows/template-build.yml
+    uses: ./.github/workflows/template-build.yaml
     with:
       branch: release
 
   release-release:
     needs: [check-new-version, build-release]
     if: needs.check-new-version.outputs.release-has-new-version == 'true'
-    uses: ./.github/workflows/template-release.yml
+    uses: ./.github/workflows/template-release.yaml
     with:
       branch: release
       version: needs.check-new-version.outputs.version
