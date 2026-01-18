@@ -1,0 +1,64 @@
+name: Release Workflow
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: Branch to build (release, beta, autoland)
+        required: true
+        type: string
+        default: release
+      version:
+        description: version
+        required: true
+        type: string
+      artifact:
+        description: version
+        required: true
+        type: string
+      runs-on:
+        description: Runner to use
+        required: false
+        type: string
+        default: ubuntu-latest
+
+jobs:
+  create-release:
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          path: release-files
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Firefox Windows ${{ inputs.version }}
+          body: |
+            ## Firefox Windows Build ${{ inputs.version }}
+
+            Automated Windows build based on Firefox ${{ inputs.version }}
+
+            ### Optimizations
+            - `-O3` Optimized
+            - Hardened Security
+            - Sandbox Enabled
+            - AVX2 + SSE4.2 support
+
+            ### Installation
+            - **Installer**: Download the `.exe` file and run it
+            - **Portable**: Extract the `.zip` file and run `firefox.exe`
+
+            _Based on [CYFARE/HellFire](${{ github.event.repository.html_url }})_
+
+          files: release-files/*
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

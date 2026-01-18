@@ -1,0 +1,132 @@
+name: Build Workflow
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: Branch to build (release, beta, autoland)
+        required: true
+        type: string
+        default: release
+      runs-on:
+        description: Runner to use
+        required: false
+        type: string
+        default: windows-latest
+    outputs:
+      artifact-name:
+        description: Name of the built artifact
+        value: ${{ jobs.build.outputs.artifact }}
+      build-status:
+        description: Build success status
+        value: ${{ jobs.build.outputs.status }}
+
+jobs:
+  build-windows:
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      artifact: ${{ steps.build.outputs.artifact }}
+      status: ${{ steps.build.outputs.status }}
+    steps:
+      - name: Restore cache (build)
+        uses: actions/cache/restore@v4
+        with:
+          key: build-${{ inputs.branch }}
+          path: |
+            ~/.mozbuild
+
+      - name: Install scoop
+        shell: pwsh
+        run: |
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+
+      - name: Install MozillaBuild and prerequisites
+        shell: pwsh
+        run: |
+          ~/scoop/shims/scoop install rustup
+          rustup default stable-x86_64-pc-windows-msvc
+
+          choco install -y --no-progress mozillabuild
+
+      # TODO: replace with checkout step
+      - name: Clone Firefox source (branch ${{ inputs.branch }})
+        shell: bash
+        run: |
+          mkdir -p ~/mozilla-source
+          cd ~/mozilla-source
+
+          if ! git clone --depth 1 "https://github.com/mozilla-firefox/firefox.git" "firefox" 2>/dev/null && [ -d "firefox" ] ; then
+              echo "Clone failed because the folder firefox exists"
+          fi
+          cd firefox
+          # Optional: checkout a specific revision or branch
+          git checkout ${{ inputs.branch }}
+          git pull
+
+      - name: Copy custom mozconfig
+        shell: pwsh
+        run: |
+          cd ~/mozilla-source/firefox
+          cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig .mozconfig
+          cat .mozconfig
+
+      - name: Mach Build
+        shell: pwsh
+        env:
+          MOZILLABUILD: 'C:/mozilla-build'
+          MACH_PS1_USE_MOZILLABUILD: 'true'
+        run: |
+          cd ~/mozilla-source/firefox
+          ./mach.cmd build
+
+      - name: Mach Package
+        shell: pwsh
+        env:
+          MOZILLABUILD: 'C:/mozilla-build'
+          MACH_PS1_USE_MOZILLABUILD: 'true'
+        run: |
+          cd ~/mozilla-source/firefox
+          ./mach.cmd package
+
+      - name: Mach Installer
+        shell: pwsh
+        env:
+          MOZILLABUILD: 'C:/mozilla-build'
+          MACH_PS1_USE_MOZILLABUILD: 'true'
+        run: |
+          cd ~/mozilla-source/firefox
+          ./mach.cmd installer
+
+      - name: Debug
+        shell: pwsh
+        run: |
+          Get-ChildItem ~/mozilla-source/firefox/objdir-opt/dist
+
+      - name: Prepare artifacts
+        id: prepare_artifacts
+        shell: pwsh
+        run: |
+          # Create release directory
+          New-Item -ItemType Directory -Force -Path "release"
+          cp ~/mozilla-source/firefox/objdir-opt/dist/*.zip release/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ inputs.branch }}
+          path: release/*
+          retention-days: 7
+
+      - name: Output artifact name
+        shell: pwsh
+        run: |
+          echo "artifact=build-${{ inputs.branch }}" >> $GITHUB_OUTPUT
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Save cache (build)
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          key: build
+          path: |
+            ~/.mozbuild

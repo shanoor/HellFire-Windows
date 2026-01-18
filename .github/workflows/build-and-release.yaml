@@ -57,194 +57,57 @@ jobs:
             echo "New version found: $(LATEST_VERSION)${{ matrix.release_name }}"
           fi
 
-  build-windows:
+  # Nightly
+  build-autoland:
     needs: check-new-version
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        branch:
-          - autoland
-          - beta
-          - release
-        include:
-          - branch: autoland
-            release_name: -nightly
-          - branch: beta
-            release_name: -beta
-          - branch: release
-            release_name: ''
-    if: needs.check-new-version.outputs.${{ matrix.branch }}-has-new-version == 'true'
-    steps:
-      # - name: Checkout HellFire repository
-      #   uses: actions/checkout@v4
-      #   with:
-      #     repository: CYFARE/HellFire
-      #     ref: ${{ needs.check-new-version.outputs.version }}
-      #     fetch-depth: 0
+    if: needs.check-new-version.outputs.autoland-has-new-version == 'true'
+    uses: ./.github/workflows/template-build.yml
+    with:
+      branch: autoland
+    secrets:
+      build-token: ${{ secrets.BUILD_TOKEN }}
 
-      # - name: Restore cache (Firefox source)
-      #   uses: actions/cache/restore@v4
-      #   with:
-      #     key: source
-      #     path: |
-      #       ~/mozilla-source
+  release-autoland:
+    needs: [check-new-version, build-autoland]
+    if: needs.check-new-version.outputs.autoland-has-new-version == 'true'
+    uses: ./.github/workflows/template-release.yml
+    with:
+      branch: autoland
+      version: needs.check-new-version.outputs.version
+      artifact: needs.build-autoland.outputs.artifact
 
-      - name: Restore cache (build)
-        uses: actions/cache/restore@v4
-        with:
-          key: build-${{ matrix.branch }}
-          path: |
-            ~/.mozbuild
+  # Beta
+  build-beta:
+    needs: check-new-version
+    if: needs.check-new-version.outputs.beta-has-new-version == 'true'
+    uses: ./.github/workflows/template-build.yml
+    with:
+      branch: beta
+    secrets:
+      build-token: ${{ secrets.BUILD_TOKEN }}
 
-      - name: Install scoop
-        shell: pwsh
-        run: |
-          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+  release-beta:
+    needs: [check-new-version, build-beta]
+    if: needs.check-new-version.outputs.beta-has-new-version == 'true'
+    uses: ./.github/workflows/template-release.yml
+    with:
+      branch: beta
+      version: needs.check-new-version.outputs.version
+      artifact: needs.build-beta.outputs.artifact
 
-      - name: Install MozillaBuild and prerequisites
-        shell: pwsh
-        run: |
-          ~/scoop/shims/scoop install rustup
-          rustup default stable-x86_64-pc-windows-msvc
+  # Stable
+  build-release:
+    needs: check-new-version
+    if: needs.check-new-version.outputs.release-has-new-version == 'true'
+    uses: ./.github/workflows/template-build.yml
+    with:
+      branch: release
 
-          choco install -y --no-progress mozillabuild
-          # choco install -y --no-progress visualstudio2022buildtools
-          # choco install -y --no-progress visualstudio2022-workload-vctools
-
-      - name: Clone Firefox source (branch ${{ matrix.branch }})
-        shell: bash
-        run: |
-          mkdir -p ~/mozilla-source
-          cd ~/mozilla-source
-
-          if ! git clone --depth 1 "https://github.com/mozilla-firefox/firefox.git" "firefox" 2>/dev/null && [ -d "firefox" ] ; then
-              echo "Clone failed because the folder firefox exists"
-          fi
-          cd firefox
-          # Optional: checkout a specific revision or branch
-          git checkout ${{ matrix.branch }}
-          git pull
-
-      # - name: Save cache (source)
-      #   uses: actions/cache/save@v4
-      #   with:
-      #     key: source
-      #     path: |
-      #       ~/mozilla-source
-
-      - name: Copy custom mozconfig
-        shell: pwsh
-        run: |
-          cd ~/mozilla-source/firefox
-          cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig .mozconfig
-          cat .mozconfig
-
-      - name: Mach Build
-        shell: pwsh
-        env:
-          MOZILLABUILD: 'C:/mozilla-build'
-          MACH_PS1_USE_MOZILLABUILD: 'true'
-        run: |
-          cd ~/mozilla-source/firefox
-          ./mach.cmd build
-
-      - name: Mach Package
-        shell: pwsh
-        env:
-          MOZILLABUILD: 'C:/mozilla-build'
-          MACH_PS1_USE_MOZILLABUILD: 'true'
-        run: |
-          cd ~/mozilla-source/firefox
-          ./mach.cmd package
-
-      - name: Mach Installer
-        shell: pwsh
-        env:
-          MOZILLABUILD: 'C:/mozilla-build'
-          MACH_PS1_USE_MOZILLABUILD: 'true'
-        run: |
-          cd ~/mozilla-source/firefox
-          ./mach.cmd installer
-
-      - name: Debug
-        shell: pwsh
-        run: |
-          Get-ChildItem ~/mozilla-source/firefox/objdir-opt/dist
-
-      - name: Prepare artifacts
-        id: prepare_artifacts
-        shell: pwsh
-        run: |
-          # Create release directory
-          New-Item -ItemType Directory -Force -Path "release"
-          cp ~/mozilla-source/firefox/objdir-opt/dist/*.zip release/
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: firefox-windows-${{ needs.check-new-version.outputs.version }}
-          path: release/*
-          retention-days: 7
-
-      - name: Save cache (build)
-        uses: actions/cache/save@v4
-        if: always()
-        with:
-          key: build
-          path: |
-            ~/.mozbuild
-
-  create-release:
-    needs: [check-new-version, build-windows]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        branch:
-          - autoland
-          - beta
-          - release
-        include:
-          - branch: autoland
-            release_name: -nightly
-          - branch: beta
-            release_name: -beta
-          - branch: release
-            release_name: ''
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: firefox-windows-${{ needs.check-new-version.outputs.version }}
-          path: release-files
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.check-new-version.outputs.version }}
-          name: Hellfire Windows ${{ needs.check-new-version.outputs.version }}
-          body: |
-            ## HellFire Windows Build ${{ needs.check-new-version.outputs.version }}
-
-            Automated Windows build based on Firefox ${{ needs.check-new-version.outputs.version }}
-
-            ### Optimizations
-            - `-O3` Optimized
-            - Hardened Security
-            - Sandbox Enabled
-            - AVX2 + SSE4.2 support
-
-            ### Installation
-            - **Installer**: Download the `.exe` file and run it
-            - **Portable**: Extract the `.zip` file and run `firefox.exe`
-
-            ### Upstream Repository
-            Based on [CYFARE/HellFire](${{ github.event.repository.html_url }})
-
-          files: release-files/*
-          draft: true
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  release-release:
+    needs: [check-new-version, build-release]
+    if: needs.check-new-version.outputs.release-has-new-version == 'true'
+    uses: ./.github/workflows/template-release.yml
+    with:
+      branch: release
+      version: needs.check-new-version.outputs.version
+      artifact: needs.build-release.outputs.artifact
