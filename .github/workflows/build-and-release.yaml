@@ -64,8 +64,6 @@ jobs:
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: autoland
-    secrets:
-      build-token: ${{ secrets.BUILD_TOKEN }}
 
   release-autoland:
     needs: [check-new-version, build-autoland]
@@ -83,8 +81,6 @@ jobs:
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: beta
-    secrets:
-      build-token: ${{ secrets.BUILD_TOKEN }}
 
   release-beta:
     needs: [check-new-version, build-beta]
