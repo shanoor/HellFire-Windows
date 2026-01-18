@@ -52,7 +52,7 @@ jobs:
             echo "${{ matrix.branch }}-has-new-version=false" >> $GITHUB_OUTPUT
             echo "Tag ${LATEST_VERSION}${{ matrix.release_name }} already exists"
           else
-            echo "version"=${LATEST_VERSION}${{ matrix.release_name }}" >> $GITHUB_OUTPUT
+            echo "version=${LATEST_VERSION}${{ matrix.release_name }}" >> $GITHUB_OUTPUT
             echo "${{ matrix.branch }}-has-new-version=true" >> $GITHUB_OUTPUT
             echo "New version found: ${LATEST_VERSION}${{ matrix.release_name }}"
           fi
