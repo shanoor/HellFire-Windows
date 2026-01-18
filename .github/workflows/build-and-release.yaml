@@ -134,6 +134,15 @@ jobs:
           cd ~/mozilla-source/firefox
           ./mach.cmd package
 
+      - name: Make Installer
+        shell: pwsh
+        env:
+          MOZILLABUILD: 'C:/mozilla-build'
+          MACH_PS1_USE_MOZILLABUILD: 'true'
+        run: |
+          cd ~/mozilla-source/firefox
+          ./mach.cmd installer
+
       - name: Debug
         shell: pwsh
         run: |
@@ -151,9 +160,10 @@ jobs:
           $VERSION = $TAG -replace 'v', ''
           $LANG = cat ./objdir-opt/dist/hellfire/default.locale
           $NAME = "hellfire-${VERSION}.${LANG}.windows.x86-64.7z"
+          
           # Create release directory
-          New-Item -ItemType Directory -Force -Path "release"
-          7z a release/$NAME ./objdir-opt/dist/hellfire
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE/release"
+          7z a $env:GITHUB_WORKSPACE/release/$NAME ./objdir-opt/dist/hellfire
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
