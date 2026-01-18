@@ -43,7 +43,7 @@ jobs:
         id: get-version
         run: |
           # Fetch version from Firefox repository
-          LATEST_VERSION=$(curl -s https://github.com/mozilla-firefox/firefox/raw/refs/heads/${{ matrix.branch }}/browser/config/version.txt)
+          LATEST_VERSION=$(curl -s https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/${{ matrix.branch }}/browser/config/version.txt)
 
           echo $LATEST_VERSION
 
