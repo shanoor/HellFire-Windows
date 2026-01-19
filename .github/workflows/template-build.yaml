@@ -48,26 +48,18 @@ jobs:
 
           choco install -y --no-progress mozillabuild
 
-      # TODO: replace with checkout step
       - name: Clone Firefox source (branch ${{ inputs.branch }})
-        shell: bash
-        run: |
-          mkdir -p ~/mozilla-source
-          cd ~/mozilla-source
-
-          if ! git clone --depth 1 "https://github.com/mozilla-firefox/firefox.git" "firefox" 2>/dev/null && [ -d "firefox" ] ; then
-              echo "Clone failed because the folder firefox exists"
-          fi
-          cd firefox
-          # Optional: checkout a specific revision or branch
-          git checkout ${{ inputs.branch }}
-          git pull
+        uses: actions/checkout@v6
+        with:
+          repository: mozilla-firefox/firefox
+          ref: ${{ inputs.branch }}
+          fetch-depth: 1
+          path: mozilla-source/firefox
 
       - name: Copy custom mozconfig
         shell: pwsh
         run: |
-          cd ~/mozilla-source/firefox
-          cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig .mozconfig
+          cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig mozilla-source/firefox/.mozconfig
           cat .mozconfig
 
       - name: Mach Build
@@ -75,8 +67,8 @@ jobs:
         env:
           MOZILLABUILD: 'C:/mozilla-build'
           MACH_PS1_USE_MOZILLABUILD: 'true'
+        working-directory: mozilla-source/firefox
         run: |
-          cd ~/mozilla-source/firefox
           ./mach.cmd build
 
       - name: Mach Package
@@ -84,8 +76,8 @@ jobs:
         env:
           MOZILLABUILD: 'C:/mozilla-build'
           MACH_PS1_USE_MOZILLABUILD: 'true'
+        working-directory: mozilla-source/firefox
         run: |
-          cd ~/mozilla-source/firefox
           ./mach.cmd package
 
       - name: Mach Installer
@@ -93,22 +85,23 @@ jobs:
         env:
           MOZILLABUILD: 'C:/mozilla-build'
           MACH_PS1_USE_MOZILLABUILD: 'true'
+        working-directory: mozilla-source/firefox
         run: |
-          cd ~/mozilla-source/firefox
           ./mach.cmd installer
 
       - name: Debug
         shell: pwsh
+        working-directory: mozilla-source/firefox
         run: |
-          Get-ChildItem ~/mozilla-source/firefox/objdir-opt/dist
+          Get-ChildItem objdir-opt/dist
 
       - name: Prepare artifacts
         id: prepare_artifacts
         shell: pwsh
+        working-directory: mozilla-source/firefox
         run: |
-          # Create release directory
-          New-Item -ItemType Directory -Force -Path "release"
-          cp ~/mozilla-source/firefox/objdir-opt/dist/*.zip release/
+          cp objdir-opt/dist/*.zip $env:GITHUB_WORKSPACE/release
+          cp objdir-opt/dist/install/sea/*.exe $env:GITHUB_WORKSPACE/release
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
