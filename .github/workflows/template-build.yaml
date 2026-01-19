@@ -22,7 +22,7 @@ on:
         value: ${{ jobs.build.outputs.status }}
 
 jobs:
-  build-windows:
+  build:
     runs-on: ${{ inputs.runs-on }}
     outputs:
       artifact: ${{ steps.build.outputs.artifact }}
