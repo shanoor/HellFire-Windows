@@ -28,6 +28,8 @@ jobs:
       artifact: ${{ steps.build.outputs.artifact }}
       status: ${{ steps.build.outputs.status }}
     steps:
+      - uses: actions/checkout@v6
+
       - name: Restore cache (build)
         uses: actions/cache/restore@v4
         with:
