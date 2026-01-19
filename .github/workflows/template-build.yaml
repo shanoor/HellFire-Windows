@@ -62,7 +62,7 @@ jobs:
         shell: pwsh
         run: |
           cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig mozilla-source/firefox/.mozconfig
-          cat .mozconfig
+          cat mozilla-source/firefox/.mozconfig
 
       - name: Mach Build
         shell: pwsh
