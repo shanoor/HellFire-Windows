@@ -73,13 +73,14 @@ jobs:
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: autoland
-      version: needs.check-new-version.outputs.version
-      artifact: needs.build-autoland.outputs.artifact
+      version: ${{ needs.check-new-version.outputs.version }}
+      artifact: ${{ needs.build-autoland.outputs.artifact }}
 
   # Beta
   build-beta:
     needs: check-new-version
-    if: needs.check-new-version.outputs.beta-has-new-version == 'true'
+    if: false
+    # if: needs.check-new-version.outputs.beta-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: beta
@@ -96,7 +97,8 @@ jobs:
   # Stable
   build-release:
     needs: check-new-version
-    if: needs.check-new-version.outputs.release-has-new-version == 'true'
+    if: false
+    # if: needs.check-new-version.outputs.release-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: release
