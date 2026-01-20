@@ -37,17 +37,10 @@ jobs:
           path: |
             ~/.mozbuild
 
-      # - name: Install scoop
-      #   shell: pwsh
-      #   run: |
-      #     Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
         run: |
-          # ~/scoop/shims/scoop install rustup
           rustup default stable-x86_64-pc-windows-msvc
-
           choco install -y --no-progress mozillabuild
 
       - name: Clone Firefox source (branch ${{ inputs.branch }})
@@ -82,14 +75,14 @@ jobs:
         run: |
           ./mach.cmd package
 
-      - name: Mach Installer
-        shell: pwsh
-        env:
-          MOZILLABUILD: 'C:/mozilla-build'
-          MACH_PS1_USE_MOZILLABUILD: 'true'
-        working-directory: mozilla-source/firefox
-        run: |
-          ./mach.cmd installer
+      # - name: Mach Installer
+      #   shell: pwsh
+      #   env:
+      #     MOZILLABUILD: 'C:/mozilla-build'
+      #     MACH_PS1_USE_MOZILLABUILD: 'true'
+      #   working-directory: mozilla-source/firefox
+      #   run: |
+      #     ./mach.cmd installer
 
       - name: Debug
         shell: pwsh
@@ -103,7 +96,7 @@ jobs:
         working-directory: mozilla-source/firefox
         run: |
           cp objdir-opt/dist/*.zip $env:GITHUB_WORKSPACE/release
-          cp objdir-opt/dist/install/sea/*.exe $env:GITHUB_WORKSPACE/release
+          # cp objdir-opt/dist/install/sea/*.exe $env:GITHUB_WORKSPACE/release
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -122,6 +115,6 @@ jobs:
         uses: actions/cache/save@v4
         if: always()
         with:
-          key: build
+          key: build-${{ inputs.branch }}
           path: |
             ~/.mozbuild
