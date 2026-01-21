@@ -81,8 +81,8 @@ jobs:
   # Beta
   build-beta:
     needs: check-new-version
-    # if: false
-    if: needs.check-new-version.outputs.beta-has-new-version == 'true'
+    if: false
+    # if: needs.check-new-version.outputs.beta-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: beta
@@ -99,8 +99,8 @@ jobs:
   # Stable
   build-stable:
     needs: check-new-version
-    # if: false
-    if: needs.check-new-version.outputs.stable-has-new-version == 'true'
+    if: false
+    # if: needs.check-new-version.outputs.stable-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: release
