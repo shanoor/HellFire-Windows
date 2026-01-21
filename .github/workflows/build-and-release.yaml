@@ -86,6 +86,7 @@ jobs:
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: beta
+      release_name: beta
 
   release-beta:
     needs: [check-new-version, build-beta]
