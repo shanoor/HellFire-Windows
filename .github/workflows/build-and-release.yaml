@@ -34,12 +34,12 @@ jobs:
           - branch: release
             release_name: stable
     outputs:
-      autoland-version: ${{ steps.get-version.outputs.autoland-version }}
+      nightly-version: ${{ steps.get-version.outputs.nightly-version }}
       beta-version: ${{ steps.get-version.outputs.beta-version }}
       stable-version: ${{ steps.get-version.outputs.stable-version }}
-      autoland-has-new-version: ${{ steps.get-version.outputs.autoland-has-new-version }}
+      nightly-has-new-version: ${{ steps.get-version.outputs.nightly-has-new-version }}
       beta-has-new-version: ${{ steps.get-version.outputs.beta-has-new-version }}
-      stable-has-new-version: ${{ steps.get-version.outputs.release-has-new-version }}
+      stable-has-new-version: ${{ steps.get-version.outputs.stable-has-new-version }}
     steps:
       - name: Get version for branch ${{ matrix.branch }}
         id: get-version
@@ -71,7 +71,7 @@ jobs:
       release_name: nightly
 
   release-nightly:
-    needs: [check-new-version, build-nightly]
+    needs: build-nightly
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: autoland
@@ -89,7 +89,7 @@ jobs:
       release_name: beta
 
   release-beta:
-    needs: [check-new-version, build-beta]
+    needs: build-beta
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: beta
@@ -107,7 +107,7 @@ jobs:
       release_name: stable
 
   release-stable:
-    needs: [check-new-version, build-stable]
+    needs: build-stable
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: release
