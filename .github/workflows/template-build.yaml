@@ -8,6 +8,11 @@ on:
         required: true
         type: string
         default: release
+      release_name:
+        description: Release name (stable, beta, nightly)
+        required: true
+        type: string
+        default: stable
       runs-on:
         description: Runner to use
         required: false
@@ -100,7 +105,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ inputs.branch }}
+          name: build-${{ inputs.release_name }}
           path: release/*
           retention-days: 7
 

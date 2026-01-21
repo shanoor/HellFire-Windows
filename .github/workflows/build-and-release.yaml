@@ -62,20 +62,21 @@ jobs:
           fi
 
   # Nightly
-  build-autoland:
+  build-nightly:
     needs: check-new-version
-    if: needs.check-new-version.outputs.autoland-has-new-version == 'true'
+    if: needs.check-new-version.outputs.nightly-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: autoland
+      release_name: nightly
 
-  release-autoland:
-    needs: [check-new-version, build-autoland]
+  release-nightly:
+    needs: [check-new-version, build-nightly]
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: autoland
-      version: ${{ needs.check-new-version.outputs.autoland-version }}
-      artifact: build-autoland
+      version: ${{ needs.check-new-version.outputs.nightly-version }}
+      artifact: build-nightly
 
   # Beta
   build-beta:
@@ -102,6 +103,7 @@ jobs:
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: release
+      release_name: stable
 
   release-stable:
     needs: [check-new-version, build-stable]
