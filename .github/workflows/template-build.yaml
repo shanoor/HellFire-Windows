@@ -30,12 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Restore cache (build)
-        uses: actions/cache/restore@v4
-        with:
-          key: build-${{ inputs.branch }}
-          path: |
-            ~/.mozbuild
+      # - name: Restore cache (build)
+      #   uses: actions/cache/restore@v4
+      #   with:
+      #     key: build-${{ inputs.branch }}
+      #     path: |
+      #       ~/.mozbuild
 
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
@@ -50,6 +50,13 @@ jobs:
           ref: ${{ inputs.branch }}
           fetch-depth: 1
           path: mozilla-source/firefox
+
+      - name: Cache for Windows
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/AppData/Local/Mozilla/sccache/cache
+          key: ${{ runner.os }}-${{ hashFiles('mozilla-source/firefox/browser/config/version_display.txt') }}
 
       - name: Copy custom mozconfig
         shell: pwsh
@@ -75,15 +82,6 @@ jobs:
         run: |
           ./mach.cmd package
 
-      # - name: Mach Installer
-      #   shell: pwsh
-      #   env:
-      #     MOZILLABUILD: 'C:/mozilla-build'
-      #     MACH_PS1_USE_MOZILLABUILD: 'true'
-      #   working-directory: mozilla-source/firefox
-      #   run: |
-      #     ./mach.cmd installer
-
       - name: Debug
         shell: pwsh
         working-directory: mozilla-source/firefox
@@ -95,8 +93,9 @@ jobs:
         shell: pwsh
         working-directory: mozilla-source/firefox
         run: |
-          cp objdir-opt/dist/*.zip $env:GITHUB_WORKSPACE/release
-          # cp objdir-opt/dist/install/sea/*.exe $env:GITHUB_WORKSPACE/release
+          cp objdir-opt/dist/*.win64.zip $env:GITHUB_WORKSPACE/release
+          cp objdir-opt/dist/*.win64.installer.exe $env:GITHUB_WORKSPACE/release
+          cp objdir-opt/dist/package_name.txt $env:GITHUB_WORKSPACE/release
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -105,16 +104,10 @@ jobs:
           path: release/*
           retention-days: 7
 
-      - name: Output artifact name
-        shell: pwsh
-        run: |
-          echo "artifact=build-${{ inputs.branch }}" >> $GITHUB_OUTPUT
-          echo "status=success" >> $GITHUB_OUTPUT
-
-      - name: Save cache (build)
-        uses: actions/cache/save@v4
-        if: always()
-        with:
-          key: build-${{ inputs.branch }}
-          path: |
-            ~/.mozbuild
+      # - name: Save cache (build)
+      #   uses: actions/cache/save@v4
+      #   if: always()
+      #   with:
+      #     key: build-${{ inputs.branch }}
+      #     path: |
+      #       ~/.mozbuild

@@ -39,9 +39,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.version }}
-          name: Firefox Windows ${{ inputs.version }}
+          name: Hellfire Windows ${{ inputs.version }}
           body: |
-            ## Firefox Windows Build ${{ inputs.version }}
+            ## Hellfire Windows Build ${{ inputs.version }}
 
             Automated Windows build based on Firefox ${{ inputs.version }}
 
@@ -53,9 +53,9 @@ jobs:
 
             ### Installation
             - **Installer**: Download the `.exe` file and run it
-            - **Portable**: Extract the `.zip` file and run `firefox.exe`
+            - **Portable**: Extract the `.zip` file and run `hellfire.exe`
 
-            _Based on [CYFARE/HellFire](${{ github.event.repository.html_url }})_
+            _Based on [CYFARE/HellFire](https://github.com/CYFARE/HellFire)_
 
           files: release-files/*
           draft: true

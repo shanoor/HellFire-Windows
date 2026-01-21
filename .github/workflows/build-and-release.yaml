@@ -1,4 +1,4 @@
-name: Build and Release HellFire Windows
+name: Build and Release Firefox Nightly Windows
 
 on:
   push:
@@ -69,12 +69,11 @@ jobs:
 
   release-autoland:
     needs: [check-new-version, build-autoland]
-    if: needs.check-new-version.outputs.autoland-has-new-version == 'true'
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: autoland
       version: ${{ needs.check-new-version.outputs.version }}
-      artifact: ${{ needs.build-autoland.outputs.artifact }}
+      artifact: build-autoland
 
   # Beta
   build-beta:
@@ -87,15 +86,14 @@ jobs:
 
   release-beta:
     needs: [check-new-version, build-beta]
-    if: needs.check-new-version.outputs.beta-has-new-version == 'true'
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: beta
-      version: needs.check-new-version.outputs.version
-      artifact: needs.build-beta.outputs.artifact
+      version: ${{ needs.check-new-version.outputs.version }}
+      artifact: build-beta
 
   # Stable
-  build-release:
+  build-stable:
     needs: check-new-version
     if: false
     # if: needs.check-new-version.outputs.release-has-new-version == 'true'
@@ -103,11 +101,10 @@ jobs:
     with:
       branch: release
 
-  release-release:
-    needs: [check-new-version, build-release]
-    if: needs.check-new-version.outputs.release-has-new-version == 'true'
+  release-stable:
+    needs: [check-new-version, build-stable]
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: release
-      version: needs.check-new-version.outputs.version
-      artifact: needs.build-release.outputs.artifact
+      version: ${{ needs.check-new-version.outputs.version }}
+      artifact: build-stable
