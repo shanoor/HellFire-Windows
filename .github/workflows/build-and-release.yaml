@@ -28,16 +28,18 @@ jobs:
           - release
         include:
           - branch: autoland
-            release_name: -nightly
+            release_name: nightly
           - branch: beta
-            release_name: -beta
+            release_name: beta
           - branch: release
-            release_name: ''
+            release_name: stable
     outputs:
-      version: ${{ steps.get-version.outputs.version }}
+      autoland-version: ${{ steps.get-version.outputs.autoland-version }}
+      beta-version: ${{ steps.get-version.outputs.beta-version }}
+      stable-version: ${{ steps.get-version.outputs.stable-version }}
       autoland-has-new-version: ${{ steps.get-version.outputs.autoland-has-new-version }}
       beta-has-new-version: ${{ steps.get-version.outputs.beta-has-new-version }}
-      release-has-new-version: ${{ steps.get-version.outputs.release-has-new-version }}
+      stable-has-new-version: ${{ steps.get-version.outputs.release-has-new-version }}
     steps:
       - name: Get version for branch ${{ matrix.branch }}
         id: get-version
@@ -48,15 +50,15 @@ jobs:
           echo $LATEST_VERSION
 
           # Check if we've already built this version
-          EXISTING_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/$LATEST_VERSION${{ matrix.release_name }}")
+          EXISTING_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/$LATEST_VERSION-${{ matrix.release_name }}")
 
           if echo "$EXISTING_RELEASE" | jq -e .tag_name > /dev/null 2>&1; then
-            echo "${{ matrix.branch }}-has-new-version=false" >> $GITHUB_OUTPUT
-            echo "Tag $LATEST_VERSION${{ matrix.release_name }} already exists"
+            echo "${{ matrix.release_name }}-has-new-version=false" >> $GITHUB_OUTPUT
+            echo "Tag $LATEST_VERSION-${{ matrix.release_name }} already exists"
           else
-            echo "version=$LATEST_VERSION${{ matrix.release_name }}" >> $GITHUB_OUTPUT
-            echo "${{ matrix.branch }}-has-new-version=true" >> $GITHUB_OUTPUT
-            echo "New version found: $LATEST_VERSION${{ matrix.release_name }}"
+            echo "${{ matrix.release_name }}-version=$LATEST_VERSION-${{ matrix.release_name }}" >> $GITHUB_OUTPUT
+            echo "${{ matrix.release_name }}-has-new-version=true" >> $GITHUB_OUTPUT
+            echo "New version found: $LATEST_VERSION-${{ matrix.release_name }}"
           fi
 
   # Nightly
@@ -72,14 +74,14 @@ jobs:
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: autoland
-      version: ${{ needs.check-new-version.outputs.version }}
+      version: ${{ needs.check-new-version.outputs.autoland-version }}
       artifact: build-autoland
 
   # Beta
   build-beta:
     needs: check-new-version
-    if: false
-    # if: needs.check-new-version.outputs.beta-has-new-version == 'true'
+    # if: false
+    if: needs.check-new-version.outputs.beta-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: beta
@@ -89,14 +91,14 @@ jobs:
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: beta
-      version: ${{ needs.check-new-version.outputs.version }}
+      version: ${{ needs.check-new-version.outputs.beta-version }}
       artifact: build-beta
 
   # Stable
   build-stable:
     needs: check-new-version
-    if: false
-    # if: needs.check-new-version.outputs.release-has-new-version == 'true'
+    # if: false
+    if: needs.check-new-version.outputs.stable-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: release
@@ -106,5 +108,5 @@ jobs:
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: release
-      version: ${{ needs.check-new-version.outputs.version }}
+      version: ${{ needs.check-new-version.outputs.stable-version }}
       artifact: build-stable
