@@ -71,7 +71,9 @@ jobs:
       release_name: nightly
 
   release-nightly:
-    needs: build-nightly
+    needs:
+      - build-nightly
+      - check-new-version
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: autoland
@@ -81,15 +83,17 @@ jobs:
   # Beta
   build-beta:
     needs: check-new-version
-    if: false
-    # if: needs.check-new-version.outputs.beta-has-new-version == 'true'
+    # if: false
+    if: needs.check-new-version.outputs.beta-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: beta
       release_name: beta
 
   release-beta:
-    needs: build-beta
+    needs:
+      - build-beta
+      - check-new-version
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: beta
@@ -99,15 +103,17 @@ jobs:
   # Stable
   build-stable:
     needs: check-new-version
-    if: false
-    # if: needs.check-new-version.outputs.stable-has-new-version == 'true'
+    # if: false
+    if: needs.check-new-version.outputs.stable-has-new-version == 'true'
     uses: ./.github/workflows/template-build.yaml
     with:
       branch: release
       release_name: stable
 
   release-stable:
-    needs: build-stable
+    needs:
+      - build-stable
+      - check-new-version
     uses: ./.github/workflows/template-release.yaml
     with:
       branch: release
