@@ -56,8 +56,11 @@ jobs:
           fetch-depth: 1
           path: mozilla-source/firefox
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: Cache for Windows
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: |
             ~/AppData/Local/Mozilla/sccache/cache
