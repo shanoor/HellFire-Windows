@@ -1,0 +1,116 @@
+name: Build and Release Firefox Nightly Windows
+
+on:
+  # push:
+  #   branches:
+  #     - feat/add-build-action
+  schedule:
+    # Check for new tags daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  FIREFOX_VERSION: '' # Will be set dynamically from tag
+
+jobs:
+  check-new-version:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch:
+          - autoland
+          - beta
+          - release
+        include:
+          - branch: autoland
+            release_name: nightly
+          - branch: beta
+            release_name: beta
+          - branch: release
+            release_name: stable
+    outputs:
+      nightly-version: ${{ steps.get-version.outputs.nightly-version }}
+      beta-version: ${{ steps.get-version.outputs.beta-version }}
+      stable-version: ${{ steps.get-version.outputs.stable-version }}
+      nightly-has-new-version: ${{ steps.get-version.outputs.nightly-has-new-version }}
+      beta-has-new-version: ${{ steps.get-version.outputs.beta-has-new-version }}
+      stable-has-new-version: ${{ steps.get-version.outputs.stable-has-new-version }}
+    steps:
+      - name: Get version for branch ${{ matrix.branch }}
+        id: get-version
+        run: |
+          # Fetch version from Firefox repository
+          LATEST_VERSION=$(curl -s https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/${{ matrix.branch }}/browser/config/version.txt)
+
+          echo $LATEST_VERSION
+
+          # Check if we've already built this version
+          EXISTING_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/$LATEST_VERSION-${{ matrix.release_name }}")
+
+          if echo "$EXISTING_RELEASE" | jq -e .tag_name > /dev/null 2>&1; then
+            echo "${{ matrix.release_name }}-has-new-version=false" >> $GITHUB_OUTPUT
+            echo "Tag $LATEST_VERSION-${{ matrix.release_name }} already exists"
+          else
+            echo "${{ matrix.release_name }}-version=$LATEST_VERSION-${{ matrix.release_name }}" >> $GITHUB_OUTPUT
+            echo "${{ matrix.release_name }}-has-new-version=true" >> $GITHUB_OUTPUT
+            echo "New version found: $LATEST_VERSION-${{ matrix.release_name }}"
+          fi
+
+  # Nightly
+  build-nightly:
+    needs: check-new-version
+    if: needs.check-new-version.outputs.nightly-has-new-version == 'true'
+    uses: ./.github/workflows/template-build.yaml
+    with:
+      branch: autoland
+      release_name: nightly
+
+  release-nightly:
+    needs:
+      - build-nightly
+      - check-new-version
+    uses: ./.github/workflows/template-release.yaml
+    with:
+      branch: autoland
+      version: ${{ needs.check-new-version.outputs.nightly-version }}
+      artifact: build-nightly
+
+  # TODO
+  # # Beta
+  # build-beta:
+  #   needs: check-new-version
+  #   # if: false
+  #   if: needs.check-new-version.outputs.beta-has-new-version == 'true'
+  #   uses: ./.github/workflows/template-build.yaml
+  #   with:
+  #     branch: beta
+  #     release_name: beta
+
+  # release-beta:
+  #   needs:
+  #     - build-beta
+  #     - check-new-version
+  #   uses: ./.github/workflows/template-release.yaml
+  #   with:
+  #     branch: beta
+  #     version: ${{ needs.check-new-version.outputs.beta-version }}
+  #     artifact: build-beta
+
+  # # Stable
+  # build-stable:
+  #   needs: check-new-version
+  #   # if: false
+  #   if: needs.check-new-version.outputs.stable-has-new-version == 'true'
+  #   uses: ./.github/workflows/template-build.yaml
+  #   with:
+  #     branch: release
+  #     release_name: stable
+
+  # release-stable:
+  #   needs:
+  #     - build-stable
+  #     - check-new-version
+  #   uses: ./.github/workflows/template-release.yaml
+  #   with:
+  #     branch: release
+  #     version: ${{ needs.check-new-version.outputs.stable-version }}
+  #     artifact: build-stable
