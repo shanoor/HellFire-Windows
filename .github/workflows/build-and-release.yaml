@@ -1,18 +1,12 @@
 name: Build and Release Firefox Nightly Windows
 
 on:
-  push:
-    branches:
-      - feat/add-build-action # TODO
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to build (e.g., v147.0a1_FP1)'
-        required: true
-        type: string
-  # schedule:
-  #   # Check for new tags daily at 2 AM UTC
-  #   - cron: '0 2 * * *'
+  # push:
+  #   branches:
+  #     - feat/add-build-action
+  schedule:
+    # Check for new tags daily at 2 AM UTC
+    - cron: '0 2 * * *'
 
 env:
   FIREFOX_VERSION: '' # Will be set dynamically from tag

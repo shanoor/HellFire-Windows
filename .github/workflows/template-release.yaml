@@ -58,7 +58,7 @@ jobs:
             _Based on [CYFARE/HellFire](https://github.com/CYFARE/HellFire)_
 
           files: release-files/*
-          draft: true
+          draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -35,13 +35,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # - name: Restore cache (build)
-      #   uses: actions/cache/restore@v4
-      #   with:
-      #     key: build-${{ inputs.branch }}
-      #     path: |
-      #       ~/.mozbuild
-
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
         run: |
@@ -111,11 +104,3 @@ jobs:
           name: build-${{ inputs.release_name }}
           path: release/*
           retention-days: 7
-
-      # - name: Save cache (build)
-      #   uses: actions/cache/save@v4
-      #   if: always()
-      #   with:
-      #     key: build-${{ inputs.branch }}
-      #     path: |
-      #       ~/.mozbuild
