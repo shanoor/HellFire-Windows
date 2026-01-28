@@ -4,6 +4,7 @@ on:
   # push:
   #   branches:
   #     - feat/add-build-action
+  workflow_dispatch:
   schedule:
     # Check for new tags daily at 2 AM UTC
     - cron: '0 2 * * *'
