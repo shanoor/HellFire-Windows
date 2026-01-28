@@ -4,6 +4,18 @@
 ac_add_options --enable-application=browser
 ac_add_options --disable-artifact-builds
 
+# Package Configs
+ac_add_options --with-redist
+
+# Cache
+ac_add_options --with-ccache=sccache
+
+# Branding
+ac_add_options --with-app-name=hellfire
+ac_add_options --with-app-basename=Hellfire
+ac_add_options --with-branding=browser/branding/unofficial
+ac_add_options --with-distribution-id=org.hellfire
+
 # Settings :: Optimizations
 #ac_add_options MOZ_PGO=1
 ac_add_options --enable-release
@@ -33,8 +45,8 @@ ac_add_options --enable-eme=widevine
 ac_add_options --enable-hardening
 ac_add_options --enable-sandbox
 
-mk_add_options MOZ_PARALLEL_COMPILE=16
-mk_add_options MOZ_PARALLEL_BUILD=16
+# mk_add_options MOZ_PARALLEL_COMPILE=16
+# mk_add_options MOZ_PARALLEL_BUILD=16
 mk_add_options MOZ_CRASHREPORTER=0
 mk_add_options MOZ_DATA_REPORTING=0
 mk_add_options MOZ_SERVICES_HEALTHREPORT=0
@@ -47,5 +59,5 @@ export LDFLAGS="/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO /DYNAMICBASE:NO"
 
 # Compile Configs
 mk_add_options AUTOCLOBBER=1
-mk_add_options MOZ_MAKE_FLAGS="-j16"
 mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/objdir-opt
+# mk_add_options MOZ_MAKE_FLAGS="-j16"

@@ -1,0 +1,106 @@
+name: Build Workflow
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: Branch to build (release, beta, autoland)
+        required: true
+        type: string
+        default: release
+      release_name:
+        description: Release name (stable, beta, nightly)
+        required: true
+        type: string
+        default: stable
+      runs-on:
+        description: Runner to use
+        required: false
+        type: string
+        default: windows-latest
+    outputs:
+      artifact-name:
+        description: Name of the built artifact
+        value: ${{ jobs.build.outputs.artifact }}
+      build-status:
+        description: Build success status
+        value: ${{ jobs.build.outputs.status }}
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      artifact: ${{ steps.build.outputs.artifact }}
+      status: ${{ steps.build.outputs.status }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install MozillaBuild and prerequisites
+        shell: pwsh
+        run: |
+          rustup default stable-x86_64-pc-windows-msvc
+          choco install -y --no-progress mozillabuild
+
+      - name: Clone Firefox source (branch ${{ inputs.branch }})
+        uses: actions/checkout@v6
+        with:
+          repository: mozilla-firefox/firefox
+          ref: ${{ inputs.branch }}
+          fetch-depth: 1
+          path: mozilla-source/firefox
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Cache for Windows
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/AppData/Local/Mozilla/sccache/cache
+          key: ${{ runner.os }}-${{ hashFiles('mozilla-source/firefox/browser/config/version_display.txt') }}
+
+      - name: Copy custom mozconfig
+        shell: pwsh
+        run: |
+          cp $env:GITHUB_WORKSPACE/MozConfigs/Win64/mozconfig mozilla-source/firefox/.mozconfig
+          cat mozilla-source/firefox/.mozconfig
+
+      - name: Mach Build
+        shell: pwsh
+        env:
+          MOZILLABUILD: 'C:/mozilla-build'
+          MACH_PS1_USE_MOZILLABUILD: 'true'
+        working-directory: mozilla-source/firefox
+        run: |
+          ./mach.cmd build
+
+      - name: Mach Package
+        shell: pwsh
+        env:
+          MOZILLABUILD: 'C:/mozilla-build'
+          MACH_PS1_USE_MOZILLABUILD: 'true'
+        working-directory: mozilla-source/firefox
+        run: |
+          ./mach.cmd package
+
+      - name: Debug
+        shell: pwsh
+        working-directory: mozilla-source/firefox
+        run: |
+          Get-ChildItem objdir-opt/dist
+
+      - name: Prepare artifacts
+        id: prepare_artifacts
+        shell: pwsh
+        working-directory: mozilla-source/firefox
+        run: |
+          cp objdir-opt/dist/*.win64.zip $env:GITHUB_WORKSPACE/release
+          cp objdir-opt/dist/*.win64.installer.exe $env:GITHUB_WORKSPACE/release
+          cp objdir-opt/dist/package_name.txt $env:GITHUB_WORKSPACE/release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ inputs.release_name }}
+          path: release/*
+          retention-days: 7
