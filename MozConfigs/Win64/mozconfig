@@ -27,7 +27,6 @@ ac_add_options --enable-strip
 ac_add_options --enable-install-strip
 ac_add_options --enable-clang-plugin
 ac_add_options --enable-lto=full
-# ac_add_options --linker=lld
 ac_add_options --enable-wasm-avx
 ac_add_options --enable-rust-simd
 ac_add_options --disable-parental-controls
@@ -41,7 +40,6 @@ ac_add_options --enable-jemalloc
 ac_add_options --enable-raw
 ac_add_options --enable-webrtc
 ac_add_options --enable-jxl
-# ac_add_options --enable-av1
 ac_add_options --enable-eme=widevine
 
 ac_add_options --enable-hardening
