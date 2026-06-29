@@ -35,6 +35,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Enable Git Long Path Support
+        run: git config --system core.longpaths true
+        shell: powershell
+
       - name: Install MozillaBuild and prerequisites
         shell: pwsh
         run: |
