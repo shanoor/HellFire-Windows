@@ -17,7 +17,7 @@ on:
         description: Runner to use
         required: false
         type: string
-        default: windows-2022-large
+        default: windows-latest
     outputs:
       artifact-name:
         description: Name of the built artifact
