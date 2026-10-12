@@ -13,6 +13,7 @@ vars:
 env:
   MOZILLABUILD: 'C:/mozilla-build'
   MACH_PS1_USE_MOZILLABUILD: 'true'
+  MAKENSISU: '{{.HOME_DIR}}/.mozbuild/nsis/Bin/makensis.exe'
 
 tasks:
   default:
