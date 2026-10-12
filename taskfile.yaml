@@ -25,6 +25,8 @@ tasks:
     cmds:
       - cmd: git config --system core.longpaths true
         ignore_error: true
+      - cmd: scoop install rustup
+        ignore_error: true
       - cmd: rustup default stable-x86_64-pc-windows-msvc
       - cmd: scoop install sccache
         ignore_error: true
