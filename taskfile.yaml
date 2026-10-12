@@ -1,0 +1,71 @@
+version: '3'
+
+vars:
+  BRANCH: '{{.BRANCH | default "autoland"}}'
+  FIREFOX_REPO: 'https://github.com/mozilla-firefox/firefox'
+  HOME_DIR_RAW:
+    sh: 'if [ -z "$USERPROFILE" ]; then echo $HOME; else echo $USERPROFILE; fi'
+  HOME_DIR: '{{.HOME_DIR_RAW | replace "\\" "/"}}'
+  SRC_DIR: '{{.HOME_DIR}}/mozilla-source/firefox'
+  MOZCONFIG_SRC: '{{.ROOT_DIR}}/MozConfigs/Win64/mozconfig'
+  RELEASE_DIR: '{{.ROOT_DIR}}/release'
+
+env:
+  MOZILLABUILD: 'C:/mozilla-build'
+  MACH_PS1_USE_MOZILLABUILD: 'true'
+
+tasks:
+  default:
+    desc: Run build pipeline (config and build)
+    cmds:
+      - task: build
+
+  setup:
+    desc: Configure system prerequisites (Git longpaths, Rust MSVC toolchain, MozillaBuild check)
+    cmds:
+      - cmd: git config --system core.longpaths true
+        ignore_error: true
+      - cmd: rustup default stable-x86_64-pc-windows-msvc
+      - cmd: |
+          pwsh -NoProfile -Command "if (!(Test-Path 'C:/mozilla-build')) { Write-Warning 'MozillaBuild was not found at C:/mozilla-build.' } else { Write-Host 'MozillaBuild found at C:/mozilla-build' }"
+        ignore_error: true
+
+  clone:
+    desc: Clone or update Firefox source repository
+    cmds:
+      - cmd: |
+          pwsh -NoProfile -Command "if (!(Test-Path '{{.SRC_DIR}}')) { Write-Host 'Cloning Firefox source (branch {{.BRANCH}})...'; New-Item -ItemType Directory -Force -Path (Split-Path '{{.SRC_DIR}}') | Out-Null; git clone --depth 1 --branch {{.BRANCH}} {{.FIREFOX_REPO}} {{.SRC_DIR}} } else { Write-Host 'Firefox source exists. Fetching and checking out branch {{.BRANCH}}...'; git -C '{{.SRC_DIR}}' fetch --depth 1 origin {{.BRANCH}}; git -C '{{.SRC_DIR}}' checkout -B {{.BRANCH}} origin/{{.BRANCH}} }"
+
+  config:
+    desc: Copy custom HellFire Win64 mozconfig into the source tree
+    deps: [clone]
+    cmds:
+      - pwsh -NoProfile -Command "Copy-Item -Force '{{.MOZCONFIG_SRC}}' '{{.SRC_DIR}}/.mozconfig'"
+      - pwsh -NoProfile -Command "Get-Content '{{.SRC_DIR}}/.mozconfig' -Head 10"
+
+  build:
+    desc: Compile HellFire Firefox with Mach
+    deps: [config]
+    dir: '{{.SRC_DIR}}'
+    cmds:
+      - pwsh -NoProfile -Command "./mach.cmd build"
+
+  package:
+    desc: Package build artifacts (.zip and .installer.exe) into release directory
+    dir: '{{.SRC_DIR}}'
+    cmds:
+      - pwsh -NoProfile -Command "./mach.cmd package"
+      - pwsh -NoProfile -Command "New-Item -ItemType Directory -Force -Path '{{.RELEASE_DIR}}' | Out-Null"
+      - pwsh -NoProfile -Command "Copy-Item -Force objdir-opt/dist/*.win64.zip, objdir-opt/dist/*.win64.installer.exe, objdir-opt/dist/package_name.txt '{{.RELEASE_DIR}}/'"
+
+  clean:
+    desc: Clobber Firefox build directory
+    dir: '{{.SRC_DIR}}'
+    cmds:
+      - pwsh -NoProfile -Command "./mach.cmd clobber"
+
+  all:
+    desc: Run full pipeline from clone to packaging
+    cmds:
+      - task: build
+      - task: package
