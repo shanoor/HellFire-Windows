@@ -21,15 +21,13 @@ tasks:
       - task: build
 
   setup:
-    desc: Configure system prerequisites (Git longpaths, Rust MSVC toolchain, sccache, MozillaBuild check)
+    desc: Configure system prerequisites (Git longpaths, Rust MSVC toolchain, MozillaBuild check)
     cmds:
       - cmd: git config --system core.longpaths true
         ignore_error: true
       - cmd: scoop install rustup
         ignore_error: true
       - cmd: rustup default stable-x86_64-pc-windows-msvc
-      - cmd: scoop install sccache
-        ignore_error: true
       - cmd: |
           pwsh -NoProfile -Command "if (!(Test-Path 'C:/mozilla-build')) { Write-Warning 'MozillaBuild was not found at C:/mozilla-build.' } else { Write-Host 'MozillaBuild found at C:/mozilla-build' }"
         ignore_error: true
