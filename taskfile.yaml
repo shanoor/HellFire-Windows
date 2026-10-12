@@ -36,6 +36,13 @@ tasks:
       - cmd: |
           pwsh -NoProfile -Command "if (!(Test-Path '{{.SRC_DIR}}')) { Write-Host 'Cloning Firefox source (branch {{.BRANCH}})...'; New-Item -ItemType Directory -Force -Path (Split-Path '{{.SRC_DIR}}') | Out-Null; git clone --depth 1 --branch {{.BRANCH}} {{.FIREFOX_REPO}} {{.SRC_DIR}} } else { Write-Host 'Firefox source exists. Fetching and checking out branch {{.BRANCH}}...'; git -C '{{.SRC_DIR}}' fetch --depth 1 origin {{.BRANCH}}; git -C '{{.SRC_DIR}}' checkout -B {{.BRANCH}} origin/{{.BRANCH}} }"
 
+  bootstrap:
+    desc: Run Mach bootstrap to install or update Firefox toolchains and dependencies
+    deps: [clone]
+    dir: '{{.SRC_DIR}}'
+    cmds:
+      - pwsh -NoProfile -Command "./mach.cmd bootstrap {{.CLI_ARGS}}"
+
   config:
     desc: Copy custom HellFire Win64 mozconfig into the source tree
     deps: [clone]
