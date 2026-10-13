@@ -17,7 +17,7 @@ ac_add_options --with-branding=browser/branding/unofficial
 ac_add_options --with-distribution-id=org.hellfire
 
 # Settings :: Optimizations
-# ac_add_options MOZ_PGO=1
+ac_add_options MOZ_PGO=1
 ac_add_options --enable-release
 ac_add_options --disable-debug
 ac_add_options --disable-debug-symbols
@@ -68,6 +68,6 @@ export CXXFLAGS="$CFLAGS"
 # export LDFLAGS=""
 
 export VERBOSE=1
-mk_add_options AUTOCLOBBER=1
+# mk_add_options AUTOCLOBBER=1
 mk_add_options MOZ_MAKE_FLAGS="-j32"
 mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/objdir-opt
